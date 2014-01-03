@@ -15,9 +15,7 @@
 #include <sys/time.h>
 #include <errno.h>
 
-/* Typical include path would be <librdkafka/rdkafka.h>, but this program
- * is builtin from within the librdkafka source tree and thus differs. */
-#include "rdkafka.h"  /* for Kafka driver */
+#include "librdkafka/rdkafka.h"  /* for Kafka driver */
 
 
 ZEND_BEGIN_ARG_INFO(arginfo_kafka_produce, 0)
