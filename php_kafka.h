@@ -1,8 +1,15 @@
+#ifdef ZTS
+#include "TSRM.h"
+#endif
+
 #ifndef PHP_KAFKA_H
 #define	PHP_KAFKA_H
-
-extern zend_module_entry fileinfo_module_entry;
 #define PHP_KAFKA_VERSION "0.1"
 
+extern zend_module_entry kafka_module_entry;
+PHP_MSHUTDOWN_FUNCTION(kafka);
+PHP_MINIT_FUNCTION(kafka);
+//PHP_FUNCTION(kafka_produce);
+//PHP_RSHUTDOWN_FUNCTION();
 #endif	/* PHP_KAFKA_H */
 
