@@ -9,7 +9,7 @@ phpize
 ./configure --enable-kafka
 make
 sudo make install
-
+sudo sh -c 'echo "extension=kafka.so" >> /etc/php5/conf.d/kafka.ini'
 ```
 
 Running:
@@ -17,5 +17,4 @@ Running:
 <?php
 // Produce a message
 kafka_produce("localhost:9092", "topic_name", "message content");
-
 ```
