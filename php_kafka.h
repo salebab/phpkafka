@@ -9,6 +9,8 @@
 extern zend_module_entry kafka_module_entry;
 PHP_MSHUTDOWN_FUNCTION(kafka);
 PHP_MINIT_FUNCTION(kafka);
+PHP_RINIT_FUNCTION(kafka);
+PHP_RSHUTDOWN_FUNCTION(kafka);
 //PHP_FUNCTION(kafka_produce);
 //PHP_RSHUTDOWN_FUNCTION();
 #endif	/* PHP_KAFKA_H */
