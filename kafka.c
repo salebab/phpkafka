@@ -49,21 +49,21 @@ ZEND_GET_MODULE(kafka)
 PHP_RSHUTDOWN_FUNCTION(kafka)
 {
     if(rk != NULL) {
-        fprintf(stdout, "%% Destroying rk\n");
+        //fprintf(stdout, "%% Destroying rk\n");
         
         while(msgcount != 0) {
             rd_kafka_poll(rk, 1);
         }  
-        
+        rd_kafka_wait_destroyed(1);
         rd_kafka_destroy(rk);
     }
     
-    fprintf(stdout, "%% Request shutdown\n");
+    //fprintf(stdout, "%% Request shutdown\n");
     return SUCCESS;
 }
 PHP_RINIT_FUNCTION(kafka)
 {
-    fprintf(stdout, "%% Request init\n");
+    //fprintf(stdout, "%% Request init\n");
     return SUCCESS;
 }
 
@@ -71,20 +71,27 @@ PHP_RINIT_FUNCTION(kafka)
 PHP_MSHUTDOWN_FUNCTION(kafka)
 {
     
-    fprintf(stdout, "%% Module shutdown");
+    //fprintf(stdout, "%% Module shutdown");
     return SUCCESS;
 }
 PHP_MINIT_FUNCTION(kafka)
 {
-    fprintf(stdout, "%% Module init\n");
+    //fprintf(stdout, "%% Module init\n");
     return SUCCESS;
 }
 static void msg_delivered (rd_kafka_t *rk,
                            void *payload, size_t len,
                            int error_code,
                            void *opaque, void *msg_opaque) {
-    //fprintf(stdout, "%% Message delivered: %i\n", error_code);
     msgcount -=1;
+}
+
+static void err_cb (rd_kafka_t *rk, int err, const char *reason, void *opaque) {
+    openlog("phpkafka", 0, LOG_USER);
+    syslog(LOG_INFO, "phpkafka - ERROR CALLBACK: %s: %s: %s\n",
+               rd_kafka_name(rk), rd_kafka_err2str(err), reason);
+    //fprintf(stdout, "%% Err\n");
+    msgcount = 0;
 }
 
 static void setup(char* host)
@@ -100,20 +107,20 @@ static void setup(char* host)
          * It will be called once for each message, either on successful
          * delivery to broker, or upon failure to deliver to broker. */
         rd_kafka_conf_set_dr_cb(conf, msg_delivered);
+        rd_kafka_conf_set_error_cb(conf, err_cb);
         rd_kafka_conf_set(conf, "queued.min.messages", "1000", NULL, 0);
 
         
-        if (!(rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf,
-                                errstr, sizeof(errstr)))) {
-                fprintf(stderr,
-                        "%% Failed to create new producer: %s\n",
-                        errstr);
+        if (!(rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errstr, sizeof(errstr)))) {
+                openlog("phpkafka", 0, LOG_USER);
+                syslog(LOG_INFO, "phpkafka - failed to create new producer: %s", errstr);
                 exit(1);
         }
         
         /* Add brokers */
         if (rd_kafka_brokers_add(rk, host) == 0) {
-                fprintf(stderr, "%% No valid brokers specified\n");
+                openlog("phpkafka", 0, LOG_USER);
+                syslog(LOG_INFO, "php kafka - No valid brokers specified");
                 exit(1);
         }
     }
@@ -122,8 +129,6 @@ static void setup(char* host)
 
 PHP_FUNCTION(kafka_produce)
 {
-    //openlog("phpkafka", 0, LOG_USER);
-    //syslog(LOG_INFO, "%s", "Message");
     char* host_port;
     int host_port_len;
     char* topic;
@@ -151,11 +156,9 @@ PHP_FUNCTION(kafka_produce)
     rkt = rd_kafka_topic_new(rk, topic, rd_kafka_topic_conf_new());
 
     topic_conf = rd_kafka_topic_conf_new();
-    //rd_kafka_topic_conf_set(topic_conf, "message.timeout.ms", "50", NULL, 0);
-    //rd_kafka_topic_conf_set(topic_conf, "request.required.acks", "0", NULL, 0);
-    
     
     /* Send/Produce message. */
+    //fprintf(stdout, "%% Producing...\n");
     rd_kafka_produce(rkt, partition,
                      RD_KAFKA_MSG_F_COPY,
                      /* Payload and length */
