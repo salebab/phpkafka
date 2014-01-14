@@ -6,5 +6,5 @@ PHP_ARG_ENABLE(kafka, Whether to enable the "kafka" extension,
 if test $PHP_KAFKA != "no"; then
   LDFLAGS="$LDFLAGS -lrdkafka"
   PHP_ADD_LIBRARY("librdkafka")
-  PHP_NEW_EXTENSION(kafka, kafka.c, $ext_shared)
+  PHP_NEW_EXTENSION(kafka, kafka.c library.c, $ext_shared)
 fi

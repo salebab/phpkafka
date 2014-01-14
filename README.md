@@ -2,7 +2,7 @@ phpkafka
 ========
 
 PHP extension for **Apache Kafka 0.8**. It's built on top of kafka C driver ([librdkafka](https://github.com/edenhill/librdkafka/)).
-
+It makes persistent connection to kafka broker with non-blocking calls, so it should be very fast.
 
 IMPORTANT: Library is in heavy development and some features are not implemented yet. 
 
@@ -26,5 +26,6 @@ Examples:
 --------
 ```php
 // Produce a message
-kafka_produce("localhost:9092", "topic_name", "message content");
+$kafka = new Kafka("localhost:9092");
+$kafka->produce("topic_name", "message content");
 ```
