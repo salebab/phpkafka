@@ -54,7 +54,6 @@ void kafka_setup(char* brokers)
          * delivery to broker, or upon failure to deliver to broker. */
         rd_kafka_conf_set_dr_cb(conf, kafka_msg_delivered);
         rd_kafka_conf_set_error_cb(conf, kafka_err_cb);
-        rd_kafka_conf_set(conf, "queued.min.messages", "1000", NULL, 0);
 
         
         if (!(rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errstr, sizeof(errstr)))) {
@@ -75,8 +74,8 @@ void kafka_setup(char* brokers)
 void kafka_destroy()
 {
     if(rk != NULL) {
-        rd_kafka_wait_destroyed(1000);
         rd_kafka_destroy(rk);
+        rd_kafka_wait_destroyed(1000);
         rk = NULL;
     }
 }
@@ -86,14 +85,11 @@ void kafka_produce(char* topic, char* msg, int msg_len)
     signal(SIGINT, kafka_stop);
     signal(SIGPIPE, kafka_stop);
     
-    rd_kafka_topic_conf_t *topic_conf;
     rd_kafka_topic_t *rkt;
     int partition = 0;
     
     /* Create topic */
-    rkt = rd_kafka_topic_new(rk, topic, rd_kafka_topic_conf_new());
-
-    topic_conf = rd_kafka_topic_conf_new();
+    rkt = rd_kafka_topic_new(rk, topic, NULL);
     
     rd_kafka_produce(rkt, partition,
                      RD_KAFKA_MSG_F_COPY,
@@ -107,4 +103,5 @@ void kafka_produce(char* topic, char* msg, int msg_len)
                      NULL);
     
     rd_kafka_poll(rk, 0);
+    rd_kafka_topic_destroy(rkt);
 }
