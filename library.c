@@ -23,9 +23,9 @@ void kafka_stop(int sig) {
 
 void kafka_err_cb (rd_kafka_t *rk, int err, const char *reason, void *opaque) {
     openlog("phpkafka", 0, LOG_USER);
-    syslog(LOG_INFO, "phpkafka - ERROR CALLBACK: %s: %s: %s\n", 
+    syslog(LOG_INFO, "phpkafka - ERROR CALLBACK: %s: %s: %s\n",
             rd_kafka_name(rk), rd_kafka_err2str(err), reason);
-    
+
     kafka_stop(err);
 }
 
@@ -45,7 +45,7 @@ void kafka_setup(char* brokers)
     if(rk == NULL) {
         char errstr[512];
         rd_kafka_conf_t *conf;
-        
+
             /* Kafka configuration */
         conf = rd_kafka_conf_new();
 
@@ -55,13 +55,13 @@ void kafka_setup(char* brokers)
         rd_kafka_conf_set_dr_cb(conf, kafka_msg_delivered);
         rd_kafka_conf_set_error_cb(conf, kafka_err_cb);
 
-        
+
         if (!(rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errstr, sizeof(errstr)))) {
                 openlog("phpkafka", 0, LOG_USER);
                 syslog(LOG_INFO, "phpkafka - failed to create new producer: %s", errstr);
                 exit(1);
         }
-        
+
         /* Add brokers */
         if (rd_kafka_brokers_add(rk, brokers) == 0) {
                 openlog("phpkafka", 0, LOG_USER);
@@ -84,13 +84,13 @@ void kafka_produce(char* topic, char* msg, int msg_len)
 {
     signal(SIGINT, kafka_stop);
     signal(SIGPIPE, kafka_stop);
-    
+
     rd_kafka_topic_t *rkt;
     int partition = 0;
-    
+
     /* Create topic */
     rkt = rd_kafka_topic_new(rk, topic, NULL);
-    
+
     rd_kafka_produce(rkt, partition,
                      RD_KAFKA_MSG_F_COPY,
                      /* Payload and length */
@@ -101,7 +101,7 @@ void kafka_produce(char* topic, char* msg, int msg_len)
                       * delivery report callback as
                       * msg_opaque. */
                      NULL);
-    
+
     rd_kafka_poll(rk, 0);
     rd_kafka_topic_destroy(rkt);
 }

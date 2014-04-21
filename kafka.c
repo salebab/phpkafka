@@ -33,7 +33,7 @@ ZEND_GET_MODULE(kafka)
 
 
 PHP_MINIT_FUNCTION(kafka)
-{ 
+{
     zend_class_entry ce;
     INIT_CLASS_ENTRY(ce, "Kafka", kafka_functions);
     kafka_ce = zend_register_internal_class(&ce TSRMLS_CC);
@@ -41,9 +41,9 @@ PHP_MINIT_FUNCTION(kafka)
 }
 PHP_RSHUTDOWN_FUNCTION(kafka) { return SUCCESS; }
 PHP_RINIT_FUNCTION(kafka) { return SUCCESS; }
-PHP_MSHUTDOWN_FUNCTION(kafka) { 
+PHP_MSHUTDOWN_FUNCTION(kafka) {
     kafka_destroy();
-    return SUCCESS; 
+    return SUCCESS;
 }
 
 
@@ -56,12 +56,12 @@ PHP_METHOD(Kafka, __construct)
 {
     char *brokers = "localhost:9092";
     int brokers_len;
-    
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", 
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s",
             &brokers, &brokers_len) == FAILURE) {
         return;
     }
-    
+
     kafka_connect(brokers);
 }
 PHP_METHOD(Kafka, produce)
@@ -71,14 +71,14 @@ PHP_METHOD(Kafka, produce)
     char *msg;
     int topic_len;
     int msg_len;
-    
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss", 
-            &topic, &topic_len, 
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
+            &topic, &topic_len,
             &msg, &msg_len) == FAILURE) {
         return;
     }
-    
+
     kafka_produce(topic, msg, msg_len);
-    
+
     RETURN_TRUE;
 }

@@ -4,11 +4,11 @@ phpkafka
 PHP extension for **Apache Kafka 0.8**. It's built on top of kafka C driver ([librdkafka](https://github.com/edenhill/librdkafka/)).
 It makes persistent connection to kafka broker with non-blocking calls, so it should be very fast.
 
-IMPORTANT: Library is in heavy development and some features are not implemented yet. 
+IMPORTANT: Library is in heavy development and some features are not implemented yet.
 
 Requirements:
 -------------
-Download and install [librdkafka](https://github.com/edenhill/librdkafka/). Run `sudo ldconfig` to update shared libraries. 
+Download and install [librdkafka](https://github.com/edenhill/librdkafka/). Run `sudo ldconfig` to update shared libraries.
 
 Installing PHP extension:
 ----------

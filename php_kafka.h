@@ -17,4 +17,3 @@ static PHP_METHOD(Kafka, __construct);
 static PHP_METHOD(Kafka, produce);
 PHPAPI void kafka_connect(char *brokers);
 #endif	/* PHP_KAFKA_H */
-
