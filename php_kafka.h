@@ -15,5 +15,6 @@ PHP_RSHUTDOWN_FUNCTION(kafka);
 
 static PHP_METHOD(Kafka, __construct);
 static PHP_METHOD(Kafka, produce);
+static PHP_METHOD(Kafka, consume);
 PHPAPI void kafka_connect(char *brokers);
 #endif	/* PHP_KAFKA_H */

@@ -6,11 +6,15 @@
 #include <php_kafka.h>
 #include "library.h"
 
+/* decalre the class entry */
 zend_class_entry *kafka_ce;
 
-zend_function_entry kafka_functions[] = {
+/* the method table */
+/* each method can have its own parameters and visibility */
+static zend_function_entry kafka_functions[] = {
     PHP_ME(Kafka, __construct, NULL, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
     PHP_ME(Kafka, produce, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(Kafka, consume, NULL, ZEND_ACC_PUBLIC)
     {NULL,NULL,NULL} /* Marks the end of function entries */
 };
 
@@ -79,6 +83,25 @@ PHP_METHOD(Kafka, produce)
     }
 
     kafka_produce(topic, msg, msg_len);
+
+    RETURN_TRUE;
+}
+
+PHP_METHOD(Kafka, consume)
+{
+    zval *object = getThis();
+    char *topic;
+    int topic_len;
+    char *offset;
+    int offset_len;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|s",
+            &topic, &topic_len,
+            &offset, &offset_len) == FAILURE) {
+        return;
+    }
+
+    kafka_consume(topic, offset);
 
     RETURN_TRUE;
 }

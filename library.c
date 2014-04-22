@@ -13,6 +13,9 @@
 
 static int run = 1;
 static rd_kafka_t *rk;
+static int exit_eof = 1; //Exit consumer when last message
+char *brokers = "localhost:9092";
+int64_t start_offset = 0;
 
 void kafka_stop(int sig) {
     run = 0;
@@ -40,38 +43,9 @@ void kafka_msg_delivered (rd_kafka_t *rk,
     }
 }
 
-void kafka_setup(char* brokers)
+void kafka_setup(char* brokers_list)
 {
-    if(rk == NULL) {
-        char errstr[512];
-        rd_kafka_conf_t *conf;
-
-        /* Kafka configuration */
-        conf = rd_kafka_conf_new();
-
-        /* Set up a message delivery report callback.
-         * It will be called once for each message, either on successful
-         * delivery to broker, or upon failure to deliver to broker. */
-        rd_kafka_conf_set_dr_cb(conf, kafka_msg_delivered);
-        rd_kafka_conf_set_error_cb(conf, kafka_err_cb);
-
-        openlog("phpkafka", 0, LOG_USER);
-        syslog(LOG_INFO, "phpkafka - using: %s", brokers);
-
-
-        if (!(rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errstr, sizeof(errstr)))) {
-                openlog("phpkafka", 0, LOG_USER);
-                syslog(LOG_INFO, "phpkafka - failed to create new producer: %s", errstr);
-                exit(1);
-        }
-
-        /* Add brokers */
-        if (rd_kafka_brokers_add(rk, brokers) == 0) {
-                openlog("phpkafka", 0, LOG_USER);
-                syslog(LOG_INFO, "php kafka - No valid brokers specified");
-                exit(1);
-        }
-    }
+    brokers = brokers_list;
 }
 
 void kafka_destroy()
@@ -93,6 +67,36 @@ void kafka_produce(char* topic, char* msg, int msg_len)
     int partition = RD_KAFKA_PARTITION_UA;
 
     rd_kafka_topic_conf_t *topic_conf;
+
+    if(rk == NULL) {
+        char errstr[512];
+        rd_kafka_conf_t *conf;
+
+        /* Kafka configuration */
+        conf = rd_kafka_conf_new();
+
+        if (!(rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errstr, sizeof(errstr)))) {
+                openlog("phpkafka", 0, LOG_USER);
+                syslog(LOG_INFO, "phpkafka - failed to create new producer: %s", errstr);
+                exit(1);
+        }
+
+        /* Add brokers */
+        if (rd_kafka_brokers_add(rk, brokers) == 0) {
+                openlog("phpkafka", 0, LOG_USER);
+                syslog(LOG_INFO, "php kafka - No valid brokers specified");
+                exit(1);
+        }
+
+        /* Set up a message delivery report callback.
+         * It will be called once for each message, either on successful
+         * delivery to broker, or upon failure to deliver to broker. */
+        rd_kafka_conf_set_dr_cb(conf, kafka_msg_delivered);
+        rd_kafka_conf_set_error_cb(conf, kafka_err_cb);
+
+        openlog("phpkafka", 0, LOG_USER);
+        syslog(LOG_INFO, "phpkafka - using: %s", brokers);
+    }
 
     /* Topic configuration */
     topic_conf = rd_kafka_topic_conf_new();
@@ -127,4 +131,108 @@ void kafka_produce(char* topic, char* msg, int msg_len)
       rd_kafka_poll(rk, 100);
 
     rd_kafka_topic_destroy(rkt);
+}
+
+static void msg_consume (rd_kafka_message_t *rkmessage,
+       void *opaque) {
+  if (rkmessage->err) {
+    if (rkmessage->err == RD_KAFKA_RESP_ERR__PARTITION_EOF) {
+      openlog("phpkafka", 0, LOG_USER);
+      syslog(LOG_INFO,
+        "phpkafka - %% Consumer reached end of %s [%"PRId32"] "
+             "message queue at offset %"PRId64"\n",
+             rd_kafka_topic_name(rkmessage->rkt),
+             rkmessage->partition, rkmessage->offset);
+      if (exit_eof)
+        run = 0;
+      return;
+    }
+
+    openlog("phpkafka", 0, LOG_USER);
+    syslog(LOG_INFO, "phpkafka - %% Consume error for topic \"%s\" [%"PRId32"] "
+           "offset %"PRId64": %s\n",
+           rd_kafka_topic_name(rkmessage->rkt),
+           rkmessage->partition,
+           rkmessage->offset,
+           rd_kafka_message_errstr(rkmessage));
+    return;
+  }
+
+php_printf("%.*s\n", (int)rkmessage->len, (char *)rkmessage->payload);
+}
+
+void kafka_consume(char* topic, char* offset)
+{
+
+  if (strlen(offset) != 0) {
+    if (!strcmp(offset, "end"))
+      start_offset = RD_KAFKA_OFFSET_END;
+    else if (!strcmp(offset, "beginning"))
+      start_offset = RD_KAFKA_OFFSET_BEGINNING;
+    else if (!strcmp(offset, "stored"))
+      start_offset = RD_KAFKA_OFFSET_STORED;
+    else
+      start_offset = strtoll(offset, NULL, 10);
+  }
+
+    rd_kafka_topic_t *rkt;
+
+    char errstr[512];
+    rd_kafka_conf_t *conf;
+
+    /* Kafka configuration */
+    conf = rd_kafka_conf_new();
+
+    /* Create Kafka handle */
+    if (!(rk = rd_kafka_new(RD_KAFKA_CONSUMER, conf, errstr, sizeof(errstr)))) {
+                  openlog("phpkafka", 0, LOG_USER);
+                  syslog(LOG_INFO, "phpkafka - failed to create new consumer: %s", errstr);
+                  exit(1);
+    }
+
+    /* Add brokers */
+    if (rd_kafka_brokers_add(rk, brokers) == 0) {
+            openlog("phpkafka", 0, LOG_USER);
+            syslog(LOG_INFO, "php kafka - No valid brokers specified");
+            exit(1);
+    }
+
+    rd_kafka_topic_conf_t *topic_conf;
+
+    int partition = 0; //RD_KAFKA_PARTITION_UA;
+
+    /* Topic configuration */
+    topic_conf = rd_kafka_topic_conf_new();
+
+    /* Create topic */
+    rkt = rd_kafka_topic_new(rk, topic, topic_conf);
+
+    /* Start consuming */
+    if (rd_kafka_consume_start(rkt, partition, start_offset) == -1) {
+      openlog("phpkafka", 0, LOG_USER);
+      syslog(LOG_INFO, "phpkafka - %% Failed to start consuming: %s",
+        rd_kafka_err2str(rd_kafka_errno2err(errno)));
+      exit(1);
+    }
+
+    while (run) {
+      rd_kafka_message_t *rkmessage;
+
+      /* Consume single message.
+       * See rdkafka_performance.c for high speed
+       * consuming of messages. */
+      rkmessage = rd_kafka_consume(rkt, partition, 1000);
+      if (!rkmessage) /* timeout */
+        continue;
+
+      msg_consume(rkmessage, NULL);
+
+      /* Return message to rdkafka */
+      rd_kafka_message_destroy(rkmessage);
+    }
+
+    /* Stop consuming */
+    rd_kafka_consume_stop(rkt, partition);
+    rd_kafka_topic_destroy(rkt);
+    rd_kafka_destroy(rk);
 }
