@@ -46,7 +46,7 @@ void kafka_setup(char* brokers)
         char errstr[512];
         rd_kafka_conf_t *conf;
 
-            /* Kafka configuration */
+        /* Kafka configuration */
         conf = rd_kafka_conf_new();
 
         /* Set up a message delivery report callback.
@@ -54,6 +54,9 @@ void kafka_setup(char* brokers)
          * delivery to broker, or upon failure to deliver to broker. */
         rd_kafka_conf_set_dr_cb(conf, kafka_msg_delivered);
         rd_kafka_conf_set_error_cb(conf, kafka_err_cb);
+
+        openlog("phpkafka", 0, LOG_USER);
+        syslog(LOG_INFO, "phpkafka - using: %s", brokers);
 
 
         if (!(rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errstr, sizeof(errstr)))) {
@@ -82,16 +85,22 @@ void kafka_destroy()
 
 void kafka_produce(char* topic, char* msg, int msg_len)
 {
+
     signal(SIGINT, kafka_stop);
     signal(SIGPIPE, kafka_stop);
 
     rd_kafka_topic_t *rkt;
-    int partition = 0;
+    int partition = RD_KAFKA_PARTITION_UA;
+
+    rd_kafka_topic_conf_t *topic_conf;
+
+    /* Topic configuration */
+    topic_conf = rd_kafka_topic_conf_new();
 
     /* Create topic */
-    rkt = rd_kafka_topic_new(rk, topic, NULL);
+    rkt = rd_kafka_topic_new(rk, topic, topic_conf);
 
-    rd_kafka_produce(rkt, partition,
+    if (rd_kafka_produce(rkt, partition,
                      RD_KAFKA_MSG_F_COPY,
                      /* Payload and length */
                      msg, msg_len,
@@ -100,8 +109,22 @@ void kafka_produce(char* topic, char* msg, int msg_len)
                      /* Message opaque, provided in
                       * delivery report callback as
                       * msg_opaque. */
-                     NULL);
+                     NULL) == -1) {
+      openlog("phpkafka", 0, LOG_USER);
+      syslog(LOG_INFO, "phpkafka - %% Failed to produce to topic %s "
+          "partition %i: %s",
+          rd_kafka_topic_name(rkt), partition,
+          rd_kafka_err2str(
+            rd_kafka_errno2err(errno)));
+      rd_kafka_poll(rk, 0);
+    }
 
+    /* Poll to handle delivery reports */
     rd_kafka_poll(rk, 0);
+
+    /* Wait for messages to be delivered */
+    while (run && rd_kafka_outq_len(rk) > 0)
+      rd_kafka_poll(rk, 100);
+
     rd_kafka_topic_destroy(rkt);
 }
