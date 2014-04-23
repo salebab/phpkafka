@@ -133,7 +133,7 @@ void kafka_produce(char* topic, char* msg, int msg_len)
     rd_kafka_topic_destroy(rkt);
 }
 
-static void msg_consume (rd_kafka_message_t *rkmessage,
+static void msg_consume(rd_kafka_message_t *rkmessage,
        void *opaque) {
   if (rkmessage->err) {
     if (rkmessage->err == RD_KAFKA_RESP_ERR__PARTITION_EOF) {
