@@ -28,5 +28,5 @@ Examples:
 // Produce a message
 $kafka = new Kafka("localhost:9092");
 $kafka->produce("topic_name", "message content");
-$kafka->consume("topic_name",·1172556);
+$kafka->consume("topic_name", 1172556);
 ```
