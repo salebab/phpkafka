@@ -8,6 +8,19 @@
 
 extern zend_module_entry kafka_module_entry;
 
+typedef struct {
+  int length;
+  int request_id;
+  int response_to;
+  int op;
+} kafka_msg_header;
+
+#define CREATE_MSG_HEADER(rid, rto, opcode) \
+  header.length = 0; \
+  header.request_id = rid; \
+  header.response_to = rto; \
+  header.op = opcode;
+
 PHP_MSHUTDOWN_FUNCTION(kafka);
 PHP_MINIT_FUNCTION(kafka);
 PHP_RINIT_FUNCTION(kafka);
