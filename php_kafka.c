@@ -21,7 +21,6 @@
 #include <php.h>
 #include <php_kafka.h>
 #include "kafka.h"
-#include "library.h"
 
 /* decalre the class entry */
 zend_class_entry *kafka_ce;
