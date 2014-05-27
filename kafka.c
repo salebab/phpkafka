@@ -259,7 +259,7 @@ void kafka_consume(zval* return_value, char* topic, char* offset)
 
       //msg_consume(rkmessage, NULL);
       //php_printf(msg_consume(rkmessage, NULL));
-      add_next_index_string(return_value, "JUNK", 1);
+      add_next_index_string(return_value, msg_consume(rkmessage, NULL), 1);
 
       /* Return message to rdkafka */
       rd_kafka_message_destroy(rkmessage);
