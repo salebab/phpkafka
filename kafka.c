@@ -257,8 +257,6 @@ void kafka_consume(zval* return_value, char* topic, char* offset)
       if (!rkmessage) /* timeout */
         continue;
 
-      //msg_consume(rkmessage, NULL);
-      //php_printf(msg_consume(rkmessage, NULL));
       add_next_index_string(return_value, msg_consume(rkmessage, NULL), 1);
 
       /* Return message to rdkafka */
