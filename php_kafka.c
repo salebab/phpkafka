@@ -133,8 +133,4 @@ PHP_METHOD(Kafka, consume)
     if(return_value == NULL) {
         RETURN_FALSE;
     }
-
-    //kafka_consume(topic, offset);
-
-    RETURN_TRUE;
 }
