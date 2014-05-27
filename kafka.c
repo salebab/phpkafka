@@ -35,10 +35,16 @@ static rd_kafka_t *rk;
 static int exit_eof = 1; //Exit consumer when last message
 char *brokers = "localhost:9092";
 int64_t start_offset = 0;
+int partition = RD_KAFKA_PARTITION_UA;
 
 void kafka_connect(char *brokers)
 {
     kafka_setup(brokers);
+}
+
+void kafka_set_partition(int partition_selected)
+{
+    partition = partition_selected;
 }
 
 void kafka_stop(int sig) {
@@ -222,8 +228,6 @@ void kafka_consume(char* topic, char* offset)
     }
 
     rd_kafka_topic_conf_t *topic_conf;
-
-    int partition = 0; //RD_KAFKA_PARTITION_UA;
 
     /* Topic configuration */
     topic_conf = rd_kafka_topic_conf_new();

@@ -30,8 +30,11 @@ PHP_RSHUTDOWN_FUNCTION(kafka);
 #include <TSRM.h>
 #endif
 
+/* Kafka class */
 static PHP_METHOD(Kafka, __construct);
+static PHP_METHOD(Kafka, set_partition);
 static PHP_METHOD(Kafka, produce);
 static PHP_METHOD(Kafka, consume);
 PHPAPI void kafka_connect(char *brokers);
-#endif	/* PHP_KAFKA_H */
+
+#endif

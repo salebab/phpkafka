@@ -29,6 +29,7 @@ zend_class_entry *kafka_ce;
 /* each method can have its own parameters and visibility */
 static zend_function_entry kafka_functions[] = {
     PHP_ME(Kafka, __construct, NULL, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
+    PHP_ME(Kafka, set_partition, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(Kafka, produce, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(Kafka, consume, NULL, ZEND_ACC_PUBLIC)
     {NULL,NULL,NULL} /* Marks the end of function entries */
@@ -78,6 +79,21 @@ PHP_METHOD(Kafka, __construct)
 
     kafka_connect(brokers);
 }
+
+PHP_METHOD(Kafka, set_partition)
+{
+    zval *partition;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|z",
+            &partition) == FAILURE) {
+        return;
+    }
+
+    if (Z_TYPE_P(partition) == IS_LONG) {
+        kafka_set_partition(Z_LVAL_P(partition));
+    }
+}
+
 PHP_METHOD(Kafka, produce)
 {
     zval *object = getThis();
