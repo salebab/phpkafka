@@ -163,7 +163,7 @@ void kafka_produce(char* topic, char* msg, int msg_len)
     rd_kafka_topic_destroy(rkt);
 }
 
-static void msg_consume(rd_kafka_message_t *rkmessage,
+static char *msg_consume(rd_kafka_message_t *rkmessage,
        void *opaque) {
   if (rkmessage->err) {
     if (rkmessage->err == RD_KAFKA_RESP_ERR__PARTITION_EOF) {
@@ -188,10 +188,11 @@ static void msg_consume(rd_kafka_message_t *rkmessage,
     return;
   }
 
-  php_printf("%.*s\n", (int)rkmessage->len, (char *)rkmessage->payload);
+  //php_printf("%.*s\n", (int)rkmessage->len, (char *)rkmessage->payload);
+  return (char *)rkmessage->payload;
 }
 
-void kafka_consume(char* topic, char* offset)
+void kafka_consume(zval* return_value, char* topic, char* offset)
 {
 
   if (strlen(offset) != 0) {
@@ -256,7 +257,9 @@ void kafka_consume(char* topic, char* offset)
       if (!rkmessage) /* timeout */
         continue;
 
-      msg_consume(rkmessage, NULL);
+      //msg_consume(rkmessage, NULL);
+      //php_printf(msg_consume(rkmessage, NULL));
+      add_next_index_string(return_value, "JUNK", 1);
 
       /* Return message to rdkafka */
       rd_kafka_message_destroy(rkmessage);

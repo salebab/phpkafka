@@ -127,7 +127,14 @@ PHP_METHOD(Kafka, consume)
         return;
     }
 
-    kafka_consume(topic, offset);
+    array_init(return_value);
+    kafka_consume(return_value, topic, offset);
+
+    if(return_value == NULL) {
+        RETURN_FALSE;
+    }
+
+    //kafka_consume(topic, offset);
 
     RETURN_TRUE;
 }
