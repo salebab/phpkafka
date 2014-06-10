@@ -257,10 +257,11 @@ void kafka_consume(zval* return_value, char* topic, char* offset)
       if (!rkmessage) /* timeout */
         continue;
 
-
       rd_kafka_message_t *rkmessage_return;
       rkmessage_return = msg_consume(rkmessage, NULL);
-      add_index_string(return_value, rkmessage_return->offset, rkmessage_return->payload, 1);
+      char payload[(int)rkmessage_return->len];
+      sprintf(payload, "%.*s\n", (int)rkmessage_return->len, (char *)rkmessage_return->payload);
+      add_index_string(return_value, (int)rkmessage_return->offset, payload, 1);
 
       /* Return message to rdkafka */
       rd_kafka_message_destroy(rkmessage);
