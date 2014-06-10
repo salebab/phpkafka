@@ -260,7 +260,7 @@ void kafka_consume(zval* return_value, char* topic, char* offset)
       rd_kafka_message_t *rkmessage_return;
       rkmessage_return = msg_consume(rkmessage, NULL);
       char payload[(int)rkmessage_return->len];
-      sprintf(payload, "%.*s\n", (int)rkmessage_return->len, (char *)rkmessage_return->payload);
+      sprintf(payload, "%.*s", (int)rkmessage_return->len, (char *)rkmessage_return->payload);
       add_index_string(return_value, (int)rkmessage_return->offset, payload, 1);
 
       /* Return message to rdkafka */
