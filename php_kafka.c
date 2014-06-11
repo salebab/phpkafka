@@ -120,15 +120,17 @@ PHP_METHOD(Kafka, consume)
     int topic_len;
     char *offset;
     int offset_len;
+    long item_count = 0;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|s",
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|sl",
             &topic, &topic_len,
-            &offset, &offset_len) == FAILURE) {
+            &offset, &offset_len,
+            &item_count) == FAILURE) {
         return;
     }
 
     array_init(return_value);
-    kafka_consume(return_value, topic, offset);
+    kafka_consume(return_value, topic, offset, item_count);
 
     if(return_value == NULL) {
         RETURN_FALSE;

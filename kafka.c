@@ -192,8 +192,10 @@ static rd_kafka_message_t *msg_consume(rd_kafka_message_t *rkmessage,
   return rkmessage;
 }
 
-void kafka_consume(zval* return_value, char* topic, char* offset)
+void kafka_consume(zval* return_value, char* topic, char* offset, int item_count)
 {
+
+  int read_counter = 0;
 
   if (strlen(offset) != 0) {
     if (!strcmp(offset, "end"))
@@ -247,7 +249,21 @@ void kafka_consume(zval* return_value, char* topic, char* offset)
       exit(1);
     }
 
+    if (item_count != 0) {
+      read_counter = item_count;
+    }
+
     while (run) {
+      if (item_count != 0 && read_counter >= 0) {
+        read_counter--;
+        openlog("phpkafka", 0, LOG_USER);
+        syslog(LOG_INFO, "phpkafka - read_counter: %d", read_counter);
+        if (read_counter == -1) {
+          run = 0;
+          continue;
+        }
+      }
+
       rd_kafka_message_t *rkmessage;
 
       /* Consume single message.
