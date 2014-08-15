@@ -86,7 +86,7 @@ void kafka_produce(char* topic, char* msg, int msg_len)
     signal(SIGPIPE, kafka_stop);
     
     rd_kafka_topic_t *rkt;
-    int partition = 0;
+    int partition = RD_KAFKA_PARTITION_UA;
     
     /* Create topic */
     rkt = rd_kafka_topic_new(rk, topic, NULL);
