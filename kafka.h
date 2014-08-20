@@ -1,5 +1,5 @@
 /**
- *  Copyright 2013-2014 Patrick Reilly.
+ *  Copyright 2013-2014 Patrick Reilly
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -13,28 +13,14 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-#ifndef PHP_KAFKA_H
-#define	PHP_KAFKA_H 1
 
-#define PHP_KAFKA_VERSION "0.1.0-dev"
-#define PHP_KAFKA_EXTNAME "kafka"
+#ifndef __KAFKA_H__
+#define __KAFKA_H__
 
-extern zend_module_entry kafka_module_entry;
-
-PHP_MSHUTDOWN_FUNCTION(kafka);
-PHP_MINIT_FUNCTION(kafka);
-PHP_RINIT_FUNCTION(kafka);
-PHP_RSHUTDOWN_FUNCTION(kafka);
-
-#ifdef ZTS
-#include <TSRM.h>
-#endif
-
-/* Kafka class */
-static PHP_METHOD(Kafka, __construct);
-static PHP_METHOD(Kafka, set_partition);
-static PHP_METHOD(Kafka, produce);
-static PHP_METHOD(Kafka, consume);
-PHPAPI void kafka_connect(char *brokers);
+void kafka_setup(char *brokers);
+void kafka_set_partition(int partition);
+void kafka_produce(char* topic, char* msg, int msg_len);
+void kafka_consume(zval* return_value, char* topic, char* offset, int item_count);
+void kafka_destroy();
 
 #endif
