@@ -25,8 +25,6 @@ void kafka_err_cb (rd_kafka_t *rk, int err, const char *reason, void *opaque) {
     openlog("phpkafka", 0, LOG_USER);
     syslog(LOG_INFO, "phpkafka - ERROR CALLBACK: %s: %s: %s\n", 
             rd_kafka_name(rk), rd_kafka_err2str(err), reason);
-    
-    kafka_stop(err);
 }
 
 void kafka_msg_delivered (rd_kafka_t *rk,
