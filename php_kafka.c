@@ -21,6 +21,7 @@
 #include <php.h>
 #include <php_kafka.h>
 #include "kafka.h"
+#include "zend_exceptions.h"
 
 /* decalre the class entry */
 zend_class_entry *kafka_ce;
@@ -52,6 +53,13 @@ zend_module_entry kafka_module_entry = {
 ZEND_GET_MODULE(kafka)
 #endif
 
+#ifndef BASE_EXCEPTION
+#if (PHP_MAJOR_VERSION < 5) || ( ( PHP_MAJOR_VERSION == 5 ) && (PHP_MINOR_VERSION < 2) )
+#define BASE_EXCEPTION zend_exception_get_default()
+#else
+#define BASE_EXCEPTION zend_exception_get_default(TSRMLS_C)
+#endif
+#endif
 
 PHP_MINIT_FUNCTION(kafka)
 {
@@ -90,8 +98,7 @@ PHP_METHOD(Kafka, set_partition)
         ||
             Z_TYPE_P(partition) != IS_LONG
     ) {
-        //TODO: trigger error or throw exception here!
-        RETURN_FALSE;
+        zend_throw_exception(BASE_EXCEPTION, "Partition is expected to be an int", 0 TSRMLS_CC);
         return;
     }
     kafka_set_partition(Z_LVAL_P(partition));
