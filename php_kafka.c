@@ -130,9 +130,12 @@ PHP_METHOD(Kafka, consume)
 
     partition = zend_read_property(kafka_ce, object, "partition", sizeof("partition") -1, 0 TSRMLS_CC);
     if (Z_TYPE_P(partition) == IS_NULL) {
-        //TODO: throw exception, trigger error, fallback to default (1)? partition...
-        RETURN_FALSE;
-        return;
+        //TODO: throw exception, trigger error, fallback to default (0) partition...
+        //for now, default to 0
+        kafka_set_partition(0);
+        ZVAL_LONG(partition, 0);
+        //update property value ->
+        zend_update_property(kafka_ce, object, "partition", sizeof("partition") -1, partition TSRMLS_CC);
     }
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|sl",
             &topic, &topic_len,
