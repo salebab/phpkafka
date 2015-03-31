@@ -101,7 +101,8 @@ PHP_METHOD(Kafka, set_partition)
 
 PHP_METHOD(Kafka, produce)
 {
-    zval *object = getThis();
+    zval *object = getThis(),
+        *partition;
     char *topic;
     char *msg;
     int topic_len;
