@@ -58,6 +58,7 @@ PHP_MINIT_FUNCTION(kafka)
     zend_class_entry ce;
     INIT_CLASS_ENTRY(ce, "Kafka", kafka_functions);
     kafka_ce = zend_register_internal_class(&ce TSRMLS_CC);
+    zend_declare_property_null(kafka_ce, "partition", sizeof("partition") -1, ZEND_ACC_PRIVATE TSRMLS_CC);
     return SUCCESS;
 }
 PHP_RSHUTDOWN_FUNCTION(kafka) { return SUCCESS; }
@@ -84,14 +85,18 @@ PHP_METHOD(Kafka, set_partition)
 {
     zval *partition;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|z",
-            &partition) == FAILURE) {
+    if (
+            zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|z", &partition) == FAILURE
+        ||
+            Z_TYPE_P(partition) != IS_LONG
+    ) {
+        //TODO: trigger error or throw exception here!
+        RETURN_FALSE;
         return;
     }
-
-    if (Z_TYPE_P(partition) == IS_LONG) {
-        kafka_set_partition(Z_LVAL_P(partition));
-    }
+    kafka_set_partition(Z_LVAL_P(partition));
+    //update partition property, so we can check to see if it's set when consuming
+    zend_update_property(kafka_ce, getThis(), "partition", sizeof("partition") -1, partition TSRMLS_CC);
 }
 
 PHP_METHOD(Kafka, produce)
@@ -115,13 +120,20 @@ PHP_METHOD(Kafka, produce)
 
 PHP_METHOD(Kafka, consume)
 {
-    zval *object = getThis();
+    zval *object = getThis(),
+        *partition;
     char *topic;
     int topic_len;
     char *offset;
     int offset_len;
     long item_count = 0;
 
+    partition = zend_read_property(kafka_ce, object, "partition", sizeof("partition") -1, 0 TSRMLS_CC);
+    if (Z_TYPE_P(partition) == IS_NULL) {
+        //TODO: throw exception, trigger error, fallback to default (1)? partition...
+        RETURN_FALSE;
+        return;
+    }
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|sl",
             &topic, &topic_len,
             &offset, &offset_len,
