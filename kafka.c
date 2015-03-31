@@ -82,7 +82,8 @@ void kafka_destroy()
 {
     if(rk != NULL) {
         rd_kafka_destroy(rk);
-        rd_kafka_wait_destroyed(1000);
+        //this wait is blocking PHP
+        //rd_kafka_wait_destroyed(1000);
         rk = NULL;
     }
 }
@@ -262,7 +263,7 @@ void kafka_consume(zval* return_value, char* topic, char* offset, int item_count
         syslog(LOG_INFO, "phpkafka - read_counter: %d", read_counter);
         if (read_counter == -1) {
           run = 0;
-          continue;
+          break;//do not continue, will result in UB => rkmessage is invalid pointer!
         }
       }
 
