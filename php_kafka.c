@@ -113,6 +113,15 @@ PHP_METHOD(Kafka, produce)
         return;
     }
 
+    partition = zend_read_property(kafka_ce, object, "partition", sizeof("partition") -1, 0 TSRMLS_CC);
+    if (Z_TYPE_P(partition) == IS_NULL) {
+        //set partition explicitly
+        kafka_set_partition(0);
+        ZVAL_LONG(partition, 0);
+        //update property value ->
+        zend_update_property(kafka_ce, object, "partition", sizeof("partition") -1, partition TSRMLS_CC);
+    }
+
     kafka_produce(topic, msg, msg_len);
 
     RETURN_TRUE;
