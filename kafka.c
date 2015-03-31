@@ -239,7 +239,7 @@ void kafka_consume(zval* return_value, char* topic, char* offset, int item_count
     rkt = rd_kafka_topic_new(rk, topic, topic_conf);
 
     openlog("phpkafka", 0, LOG_USER);
-    syslog(LOG_INFO, "phpkafka - start_offset: %d and offset passed: %d", start_offset, offset);
+    syslog(LOG_INFO, "phpkafka - start_offset: %"PRId64" and offset passed: %s", start_offset, offset);
 
     /* Start consuming */
     if (rd_kafka_consume_start(rkt, partition, start_offset) == -1) {
