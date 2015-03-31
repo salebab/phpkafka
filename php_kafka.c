@@ -114,6 +114,7 @@ PHP_METHOD(Kafka, produce)
     char *msg;
     int topic_len;
     int msg_len;
+    int prod_val;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
             &topic, &topic_len,
@@ -121,18 +122,11 @@ PHP_METHOD(Kafka, produce)
         return;
     }
 
-    partition = zend_read_property(kafka_ce, object, "partition", sizeof("partition") -1, 0 TSRMLS_CC);
-    if (Z_TYPE_P(partition) == IS_NULL) {
-        //set partition explicitly
-        kafka_set_partition(0);
-        ZVAL_LONG(partition, 0);
-        //update property value ->
-        zend_update_property(kafka_ce, object, "partition", sizeof("partition") -1, partition TSRMLS_CC);
+    prod_val = kafka_produce(topic, msg, msg_len);
+    if (prod_val == -1) {
+        RETURN_FALSE;
     }
-
-    kafka_produce(topic, msg, msg_len);
-
-    RETURN_TRUE;
+    RETURN_LONG(prod_val);
 }
 
 PHP_METHOD(Kafka, consume)

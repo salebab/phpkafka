@@ -87,7 +87,7 @@ void kafka_destroy()
     }
 }
 
-void kafka_produce(char* topic, char* msg, int msg_len)
+int kafka_produce(char* topic, char* msg, int msg_len)
 {
 
     signal(SIGINT, kafka_stop);
@@ -151,6 +151,7 @@ void kafka_produce(char* topic, char* msg, int msg_len)
           rd_kafka_err2str(
             rd_kafka_errno2err(errno)));
       rd_kafka_poll(rk, 0);
+      partition = -1;
     }
 
     /* Poll to handle delivery reports */
@@ -161,6 +162,7 @@ void kafka_produce(char* topic, char* msg, int msg_len)
       rd_kafka_poll(rk, 100);
 
     rd_kafka_topic_destroy(rkt);
+    return partition;
 }
 
 static rd_kafka_message_t *msg_consume(rd_kafka_message_t *rkmessage,
