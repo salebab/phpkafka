@@ -279,14 +279,15 @@ void kafka_consume(zval* return_value, char* topic, char* offset, int item_count
       rd_kafka_message_t *rkmessage_return;
       rkmessage_return = msg_consume(rkmessage, NULL);
       if (rkmessage_return != NULL) {
-          if (rkmessage_return->len > 0) {
+          if ((int) rkmessage_return->len > 0) {
               //ensure there is a payload
               char payload[(int) rkmessage_return->len];
-              sprintf(payload, "%.s", (int) rkmessage_return->len, (char *) rkmessage_return->payload);
-              add_index_string(return_value, (unsigned int) rkmessage_return->len, payload, 1);
+              sprintf(payload, "%.*s", (int) rkmessage_return->len, (char *) rkmessage_return->payload);
+              add_index_string(return_value, (int) rkmessage_return->offset, payload, 1);
           } else {
               //add empty value
-              add_index_string(return_value, (unsigned int) rkmessage_return->len, "", 1);
+              char payload[1] = "";//empty string
+              add_index_string(return_value, (int) rkmessage_return->offset, payload, 1);
           }
       }
       /* Return message to rdkafka */
