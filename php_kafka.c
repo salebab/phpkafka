@@ -31,7 +31,9 @@ zend_class_entry *kafka_ce;
 static zend_function_entry kafka_functions[] = {
     PHP_ME(Kafka, __construct, NULL, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
     PHP_ME(Kafka, __destruct, NULL, ZEND_ACC_DTOR | ZEND_ACC_PUBLIC)
-    PHP_ME(Kafka, set_partition, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(Kafka, set_partition, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
+    PHP_ME(Kafka, setPartition, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(Kafka, disconnect, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(Kafka, produce, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(Kafka, consume, NULL, ZEND_ACC_PUBLIC)
     {NULL,NULL,NULL} /* Marks the end of function entries */
@@ -112,6 +114,32 @@ PHP_METHOD(Kafka, set_partition)
     kafka_set_partition(Z_LVAL_P(partition));
     //update partition property, so we can check to see if it's set when consuming
     zend_update_property(kafka_ce, getThis(), "partition", sizeof("partition") -1, partition TSRMLS_CC);
+}
+
+//leave duplicate method for now, set_partition is deprecated
+PHP_METHOD(Kafka, setPartition)
+{
+    zval *partition;
+
+    if (
+            zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|z", &partition) == FAILURE
+        ||
+            Z_TYPE_P(partition) != IS_LONG
+    ) {
+        zend_throw_exception(BASE_EXCEPTION, "Partition is expected to be an int", 0 TSRMLS_CC);
+        return;
+    }
+    kafka_set_partition(Z_LVAL_P(partition));
+    zend_update_property(kafka_ce, getThis(), "partition", sizeof("partition") -1, partition TSRMLS_CC);
+}
+
+PHP_METHOD(Kafka, disconnect)
+{
+    kafka_destroy();
+    if (kafka_is_connected()) {
+        RETURN_FALSE;
+    }
+    RETURN_TRUE;
 }
 
 PHP_METHOD(Kafka, produce)
