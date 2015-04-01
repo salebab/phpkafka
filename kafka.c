@@ -278,16 +278,17 @@ void kafka_consume(zval* return_value, char* topic, char* offset, int item_count
 
       rd_kafka_message_t *rkmessage_return;
       rkmessage_return = msg_consume(rkmessage, NULL);
-      if (rkmessage_return == NULL) {
-          //msg_consume returned NULL indicating an error
-          //use rkmessage->err to produce notice?, for now:
-          rd_kafka_message_destroy(rkmessage);
-          break;
+      if (rkmessage_return != NULL) {
+          if (rkmessage_return->len > 0) {
+              //ensure there is a payload
+              char payload[(int) rkmessage_return->len];
+              sprintf(payload, "%.s", (int) rkmessage_return->len, (char *) rkmessage_return->payload);
+              add_index_string(return_value, (unsigned int) rkmessage_return->len, payload, 1);
+          } else {
+              //add empty value
+              add_index_string(return_value, (unsigned int) rkmessage_return->len, "", 1);
+          }
       }
-      char payload[(int)rkmessage_return->len];
-      sprintf(payload, "%.*s", (int)rkmessage_return->len, (char *)rkmessage_return->payload);
-      add_next_index_stringl(return_value, payload, (unsigned int) rkmessage_return->len, 1);
-
       /* Return message to rdkafka */
       rd_kafka_message_destroy(rkmessage);
     }
