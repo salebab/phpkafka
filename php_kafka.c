@@ -70,6 +70,14 @@ PHP_MINIT_FUNCTION(kafka)
     INIT_CLASS_ENTRY(ce, "Kafka", kafka_functions);
     kafka_ce = zend_register_internal_class(&ce TSRMLS_CC);
     zend_declare_property_null(kafka_ce, "partition", sizeof("partition") -1, ZEND_ACC_PRIVATE TSRMLS_CC);
+    zend_declare_class_constant_stringl(
+        kafka_ce, "OFFSET_BEGIN", sizeof("OFFSET_BEGIN") -1,
+        "beginning", sizeof("beginning")-1
+    );
+    zend_declare_class_constant_stringl(
+        kafka_ce, "OFFSET_END", sizeof("OFFSET_END")-1,
+        "end", sizeof("end")
+    );
     return SUCCESS;
 }
 PHP_RSHUTDOWN_FUNCTION(kafka) { return SUCCESS; }

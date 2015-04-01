@@ -25,7 +25,6 @@
 #include <syslog.h>
 #include <sys/time.h>
 #include <errno.h>
-#include <syslog.h>
 #include <time.h>
 #include "kafka.h"
 #include "librdkafka/rdkafka.h"
