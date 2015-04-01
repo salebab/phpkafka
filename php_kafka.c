@@ -87,6 +87,9 @@ PHP_MSHUTDOWN_FUNCTION(kafka) {
     return SUCCESS;
 }
 
+/** {{{ proto void DOMDocument::__construct( string $brokers );
+    Constructor, expects a comma-separated list of brokers to connect to
+*/
 PHP_METHOD(Kafka, __construct)
 {
     char *brokers = "localhost:9092";
@@ -99,7 +102,11 @@ PHP_METHOD(Kafka, __construct)
 
     kafka_connect(brokers);
 }
+/* }}} end Kafka::__construct */
 
+/* {{{ proto bool Kafka::isConnected( void )
+    returns true if kafka connection is active, fals if not
+*/
 PHP_METHOD(Kafka, isConnected)
 {
     if (kafka_is_connected()) {
@@ -107,12 +114,22 @@ PHP_METHOD(Kafka, isConnected)
     }
     RETURN_FALSE;
 }
+/* }}} end bool Kafka::isConnected */
 
+/* {{{ proto void Kafka::__destruct( void )
+    constructor, disconnects kafka
+*/
 PHP_METHOD(Kafka, __destruct)
 {
     kafka_destroy();
 }
+/* }}} end Kafka::__destruct */
 
+/* {{{ proto void Kafka::set_partition( int $partition );
+    Set partition (used by consume method)
+    This method is deprecated, in favour of the more PSR-compliant
+    Kafka::setPartition
+*/
 PHP_METHOD(Kafka, set_partition)
 {
     zval *partition;
@@ -129,8 +146,11 @@ PHP_METHOD(Kafka, set_partition)
     //update partition property, so we can check to see if it's set when consuming
     zend_update_property(kafka_ce, getThis(), "partition", sizeof("partition") -1, partition TSRMLS_CC);
 }
+/* }}} end Kafka::set_partition */
 
-//leave duplicate method for now, set_partition is deprecated
+/* {{{ proto void Kafka::setPartition( int $partition );
+    Set partition to use for Kafka::consume calls
+*/
 PHP_METHOD(Kafka, setPartition)
 {
     zval *partition;
@@ -146,7 +166,12 @@ PHP_METHOD(Kafka, setPartition)
     kafka_set_partition(Z_LVAL_P(partition));
     zend_update_property(kafka_ce, getThis(), "partition", sizeof("partition") -1, partition TSRMLS_CC);
 }
+/* }}} end Kafka::setPartition */
 
+/* {{{ proto bool Kafka::disconnect( void );
+    Disconnects kafka, returns false if disconnect failed
+    Warning: producing a new message will reconnect to the initial brokers
+*/
 PHP_METHOD(Kafka, disconnect)
 {
     kafka_destroy();
@@ -155,7 +180,12 @@ PHP_METHOD(Kafka, disconnect)
     }
     RETURN_TRUE;
 }
+/* }}} end Kafka::disconnect */
 
+/* {{{ proto mixed Kafka::produce( string $topic, string $message);
+    Produce a message, returns int (partition used to produce)
+    or false if something went wrong
+*/
 PHP_METHOD(Kafka, produce)
 {
     zval *object = getThis(),
@@ -178,7 +208,11 @@ PHP_METHOD(Kafka, produce)
     }
     RETURN_LONG(prod_val);
 }
+/* }}} end Kafka::produce */
 
+/* {{{ proto array Kafka::consume( string $topic, [ mixed $offset = 0 [, int $length = 1] ] );
+    Consumes 1 or more ($length) messages from the $offset (default 0)
+*/
 PHP_METHOD(Kafka, consume)
 {
     zval *object = getThis(),
@@ -218,3 +252,4 @@ PHP_METHOD(Kafka, consume)
         RETURN_FALSE;
     }
 }
+/* }}} end Kafka::consume */
