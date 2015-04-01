@@ -263,7 +263,7 @@ void kafka_consume(zval* return_value, char* topic, char* offset, int item_count
         syslog(LOG_INFO, "phpkafka - read_counter: %d", read_counter);
         if (read_counter == -1) {
           run = 0;
-          break;//do not continue, will result in UB => rkmessage is invalid pointer!
+          continue;//so continue, or we'll get a segfault
         }
       }
 
