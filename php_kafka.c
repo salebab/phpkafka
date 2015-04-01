@@ -34,6 +34,7 @@ static zend_function_entry kafka_functions[] = {
     PHP_ME(Kafka, set_partition, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
     PHP_ME(Kafka, setPartition, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(Kafka, disconnect, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(Kafka, isConnected, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(Kafka, produce, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(Kafka, consume, NULL, ZEND_ACC_PUBLIC)
     {NULL,NULL,NULL} /* Marks the end of function entries */
@@ -69,6 +70,8 @@ PHP_MINIT_FUNCTION(kafka)
     zend_class_entry ce;
     INIT_CLASS_ENTRY(ce, "Kafka", kafka_functions);
     kafka_ce = zend_register_internal_class(&ce TSRMLS_CC);
+    //do not allow people to extend this class, make it final
+    kafka_ce->ce_flags |= ZEND_ACC_FINAL_CLASS;
     zend_declare_property_null(kafka_ce, "partition", sizeof("partition") -1, ZEND_ACC_PRIVATE TSRMLS_CC);
     zend_declare_class_constant_stringl(
         kafka_ce, "OFFSET_BEGIN", sizeof("OFFSET_BEGIN") -1,
@@ -100,11 +103,17 @@ PHP_METHOD(Kafka, __construct)
     kafka_connect(brokers);
 }
 
-PHP_METHOD(Kafka, __destruct)
+PHP_METHOD(Kafka, isConnected)
 {
     if (kafka_is_connected()) {
-        kafka_destroy();
+        RETURN_TRUE;
     }
+    RETURN_FALSE;
+}
+
+PHP_METHOD(Kafka, __destruct)
+{
+    kafka_destroy();
 }
 
 PHP_METHOD(Kafka, set_partition)
