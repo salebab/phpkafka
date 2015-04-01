@@ -18,7 +18,8 @@
 
 #define PHP_KAFKA_VERSION "0.1.0-dev"
 #define PHP_KAFKA_EXTNAME "kafka"
-
+#define PHP_KAFKA_OFFSET_BEGIN "beginning"
+#define PHP_KAFKA_OFFSET_END "end"
 extern zend_module_entry kafka_module_entry;
 
 PHP_MSHUTDOWN_FUNCTION(kafka);

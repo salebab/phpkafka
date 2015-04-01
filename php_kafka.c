@@ -57,6 +57,9 @@ zend_module_entry kafka_module_entry = {
 ZEND_GET_MODULE(kafka)
 #endif
 
+#define REGISTER_KAFKA_CLASS_CONST_STRING(ce, name, value) \
+    zend_declare_class_constant_stringl(ce, name, sizeof(name)-1, value, sizeof(value)-1)
+
 #ifndef BASE_EXCEPTION
 #if (PHP_MAJOR_VERSION < 5) || ( ( PHP_MAJOR_VERSION == 5 ) && (PHP_MINOR_VERSION < 2) )
 #define BASE_EXCEPTION zend_exception_get_default()
@@ -73,14 +76,8 @@ PHP_MINIT_FUNCTION(kafka)
     //do not allow people to extend this class, make it final
     kafka_ce->ce_flags |= ZEND_ACC_FINAL_CLASS;
     zend_declare_property_null(kafka_ce, "partition", sizeof("partition") -1, ZEND_ACC_PRIVATE TSRMLS_CC);
-    zend_declare_class_constant_stringl(
-        kafka_ce, "OFFSET_BEGIN", sizeof("OFFSET_BEGIN") -1,
-        "beginning", sizeof("beginning")-1
-    );
-    zend_declare_class_constant_stringl(
-        kafka_ce, "OFFSET_END", sizeof("OFFSET_END")-1,
-        "end", sizeof("end")
-    );
+    REGISTER_KAFKA_CLASS_CONST_STRING(kafka_ce, "OFFSET_BEGIN", PHP_KAFKA_OFFSET_BEGIN);
+    REGISTER_KAFKA_CLASS_CONST_STRING(kafka_ce, "OFFSET_END", PHP_KAFKA_OFFSET_END);
     return SUCCESS;
 }
 PHP_RSHUTDOWN_FUNCTION(kafka) { return SUCCESS; }
@@ -190,7 +187,8 @@ PHP_METHOD(Kafka, consume)
     int topic_len;
     char *offset;
     int offset_len;
-    long item_count = 0;
+    long count = 0;
+    zval *item_count;
 
     partition = zend_read_property(kafka_ce, object, "partition", sizeof("partition") -1, 0 TSRMLS_CC);
     if (Z_TYPE_P(partition) == IS_NULL) {
@@ -201,15 +199,20 @@ PHP_METHOD(Kafka, consume)
         //update property value ->
         zend_update_property(kafka_ce, object, "partition", sizeof("partition") -1, partition TSRMLS_CC);
     }
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|sl",
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|sz",
             &topic, &topic_len,
             &offset, &offset_len,
             &item_count) == FAILURE) {
         return;
     }
+    if (Z_TYPE_P(item_count) == IS_STRING && strcmp(Z_STRVAL_P(item_count), PHP_KAFKA_OFFSET_END) == 0) {
+        count = -1;
+    } else if (Z_TYPE_P(item_count) == IS_LONG) {
+        count = Z_LVAL_P(item_count);
+    } else {}//todo throw exception?
 
     array_init(return_value);
-    kafka_consume(return_value, topic, offset, item_count);
+    kafka_consume(return_value, topic, offset, count);
 
     if(return_value == NULL) {
         RETURN_FALSE;
