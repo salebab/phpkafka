@@ -178,7 +178,7 @@ static rd_kafka_message_t *msg_consume(rd_kafka_message_t *rkmessage,
              rkmessage->partition, rkmessage->offset);
       if (exit_eof)
         run = 0;
-      return;
+      return NULL;
     }
 
     openlog("phpkafka", 0, LOG_USER);
@@ -188,7 +188,7 @@ static rd_kafka_message_t *msg_consume(rd_kafka_message_t *rkmessage,
            rkmessage->partition,
            rkmessage->offset,
            rd_kafka_message_errstr(rkmessage));
-    return;
+    return NULL;
   }
 
   //php_printf("%.*s\n", (int)rkmessage->len, (char *)rkmessage->payload);
@@ -278,6 +278,12 @@ void kafka_consume(zval* return_value, char* topic, char* offset, int item_count
 
       rd_kafka_message_t *rkmessage_return;
       rkmessage_return = msg_consume(rkmessage, NULL);
+      if (rkmessage_return == NULL) {
+          //msg_consume returned NULL indicating an error
+          //use rkmessage->err to produce notice?, for now:
+          rd_kafka_message_destroy(rkmessage);
+          break;
+      }
       char payload[(int)rkmessage_return->len];
       sprintf(payload, "%.*s", (int)rkmessage_return->len, (char *)rkmessage_return->payload);
       add_next_index_stringl(return_value, payload, (unsigned int) rkmessage_return->len, 1);
