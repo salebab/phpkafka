@@ -42,6 +42,14 @@ void kafka_connect(char *brokers)
     kafka_setup(brokers);
 }
 
+//return 1 if rd is not NULL
+int kafka_is_connected( void )
+{
+    if (rk == NULL)
+        return 0;
+    return 1;
+}
+
 void kafka_set_partition(int partition_selected)
 {
     partition = partition_selected;

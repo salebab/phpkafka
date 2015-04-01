@@ -30,6 +30,7 @@ zend_class_entry *kafka_ce;
 /* each method can have its own parameters and visibility */
 static zend_function_entry kafka_functions[] = {
     PHP_ME(Kafka, __construct, NULL, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
+    PHP_ME(Kafka, __destruct, NULL, ZEND_ACC_DTOR | ZEND_ACC_PUBLIC)
     PHP_ME(Kafka, set_partition, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(Kafka, produce, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(Kafka, consume, NULL, ZEND_ACC_PUBLIC)
@@ -87,6 +88,13 @@ PHP_METHOD(Kafka, __construct)
     }
 
     kafka_connect(brokers);
+}
+
+PHP_METHOD(Kafka, __destruct)
+{
+    if (kafka_is_connected()) {
+        kafka_destroy();
+    }
 }
 
 PHP_METHOD(Kafka, set_partition)

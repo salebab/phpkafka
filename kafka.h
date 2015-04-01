@@ -20,6 +20,7 @@
 void kafka_setup(char *brokers);
 void kafka_set_partition(int partition);
 int kafka_produce(char* topic, char* msg, int msg_len);
+int kafka_is_connected( void );
 void kafka_consume(zval* return_value, char* topic, char* offset, int item_count);
 void kafka_destroy();
 

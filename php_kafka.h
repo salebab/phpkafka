@@ -32,6 +32,7 @@ PHP_RSHUTDOWN_FUNCTION(kafka);
 
 /* Kafka class */
 static PHP_METHOD(Kafka, __construct);
+static PHP_METHOD(Kafka, __destruct);
 static PHP_METHOD(Kafka, set_partition);
 static PHP_METHOD(Kafka, produce);
 static PHP_METHOD(Kafka, consume);
