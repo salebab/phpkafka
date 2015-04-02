@@ -16,7 +16,7 @@
 #include <php.h>
 #include "kafka.h"
 #include <php_kafka.h>
-
+#include <inttypes.h>
 #include <ctype.h>
 #include <signal.h>
 #include <string.h>
@@ -28,7 +28,69 @@
 #include <time.h>
 #include "kafka.h"
 #include "librdkafka/rdkafka.h"
+typedef struct rd_kafka_topic_conf_s {
+    int     required_acks;
+        int     enforce_isr_cnt;
+    int32_t request_timeout_ms;
+    int     message_timeout_ms;
 
+    int32_t (*partitioner) (const rd_kafka_topic_t *rkt,
+                const void *keydata, size_t keylen,
+                int32_t partition_cnt,
+                void *rkt_opaque,
+                void *msg_opaque);
+
+        int     produce_offset_report;
+
+        char   *group_id_str;
+        void *group_id;    /* Consumer group id in protocol format */
+
+    int     auto_commit;
+    int     auto_commit_interval_ms;
+    int     auto_offset_reset;
+    char   *offset_store_path;
+    int     offset_store_sync_interval_ms;
+        enum {
+                RD_KAFKA_OFFSET_METHOD_FILE,
+                RD_KAFKA_OFFSET_METHOD_BROKER,
+        } offset_store_method;
+
+    /* Application provided opaque pointer (this is rkt_opaque) */
+    void   *opaque;
+} rd_kafka_topic_conf_t;
+struct rd_kafka_topic_s {
+    struct {
+        struct rd_kafka_topic_s *tqe_next;
+        struct rd_kafka_topic_s **tqe_prev;
+    };
+
+    int                rkt_refcnt;
+
+    pthread_rwlock_t   rkt_lock;
+    void *rkt_topic;
+    struct rd_kafka_toppar_s  *rkt_ua;  /* unassigned partition */
+    struct rd_kafka_toppar_s **rkt_p;
+    int32_t            rkt_partition_cnt;
+    struct {
+        void * tqh_first;
+        void * tqh_last;
+    } rkt_desp;
+    uint64_t             rkt_ts_metadata; /* Timestamp of last metadata
+                         * update for this topic. */
+
+    enum {
+        RD_KAFKA_TOPIC_S_UNKNOWN,   /* No cluster information yet */
+        RD_KAFKA_TOPIC_S_EXISTS,    /* Topic exists in cluster */
+        RD_KAFKA_TOPIC_S_NOTEXISTS, /* Topic is not known in cluster */
+    } rkt_state;
+
+        int                rkt_flags;
+#define RD_KAFKA_TOPIC_F_LEADER_QUERY  0x1 /* There is an outstanding
+                                            * leader query for this topic */
+    rd_kafka_t* rkt_rk;
+
+    rd_kafka_topic_conf_t rkt_conf;
+};
 static int run = 1;
 static rd_kafka_t *rk;
 static int exit_eof = 1; //Exit consumer when last message
@@ -96,7 +158,35 @@ void kafka_destroy()
     }
 }
 
-int kafka_produce(char* topic, char* msg, int msg_len)
+static void kafka_init( void )
+{
+    if (rk == NULL)
+    {
+        char errstr[512];
+        rd_kafka_conf_t *conf = rd_kafka_conf_new();
+        if (!(rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errstr, sizeof(errstr)))) {
+            openlog("phpkafka", 0, LOG_USER);
+            syslog(LOG_INFO, "phpkafka - failed to create new producer: %s", errstr);
+            exit(1);
+        }
+        /* Add brokers */
+        if (rd_kafka_brokers_add(rk, brokers) == 0) {
+            openlog("phpkafka", 0, LOG_USER);
+            syslog(LOG_INFO, "php kafka - No valid brokers specified");
+            exit(1);
+        }
+        /* Set up a message delivery report callback.
+         * It will be called once for each message, either on successful
+         * delivery to broker, or upon failure to deliver to broker. */
+        rd_kafka_conf_set_dr_cb(conf, kafka_msg_delivered);
+        rd_kafka_conf_set_error_cb(conf, kafka_err_cb);
+
+        openlog("phpkafka", 0, LOG_USER);
+        syslog(LOG_INFO, "phpkafka - using: %s", brokers);
+    }
+}
+
+void kafka_produce(char* topic, char* msg, int msg_len)
 {
 
     signal(SIGINT, kafka_stop);
@@ -107,34 +197,8 @@ int kafka_produce(char* topic, char* msg, int msg_len)
 
     rd_kafka_topic_conf_t *topic_conf;
 
-    if(rk == NULL) {
-        char errstr[512];
-        rd_kafka_conf_t *conf;
-
-        /* Kafka configuration */
-        conf = rd_kafka_conf_new();
-
-        if (!(rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errstr, sizeof(errstr)))) {
-                openlog("phpkafka", 0, LOG_USER);
-                syslog(LOG_INFO, "phpkafka - failed to create new producer: %s", errstr);
-                exit(1);
-        }
-
-        /* Add brokers */
-        if (rd_kafka_brokers_add(rk, brokers) == 0) {
-                openlog("phpkafka", 0, LOG_USER);
-                syslog(LOG_INFO, "php kafka - No valid brokers specified");
-                exit(1);
-        }
-
-        /* Set up a message delivery report callback.
-         * It will be called once for each message, either on successful
-         * delivery to broker, or upon failure to deliver to broker. */
-        rd_kafka_conf_set_dr_cb(conf, kafka_msg_delivered);
-        rd_kafka_conf_set_error_cb(conf, kafka_err_cb);
-
-        openlog("phpkafka", 0, LOG_USER);
-        syslog(LOG_INFO, "phpkafka - using: %s", brokers);
+    if (rk == NULL) {
+        kafka_init();
     }
 
     /* Topic configuration */
@@ -160,7 +224,6 @@ int kafka_produce(char* topic, char* msg, int msg_len)
           rd_kafka_err2str(
             rd_kafka_errno2err(errno)));
       rd_kafka_poll(rk, 0);
-      partition = -1;
     }
 
     /* Poll to handle delivery reports */
@@ -171,7 +234,6 @@ int kafka_produce(char* topic, char* msg, int msg_len)
       rd_kafka_poll(rk, 100);
 
     rd_kafka_topic_destroy(rkt);
-    return partition;
 }
 
 static rd_kafka_message_t *msg_consume(rd_kafka_message_t *rkmessage,
@@ -203,6 +265,27 @@ static rd_kafka_message_t *msg_consume(rd_kafka_message_t *rkmessage,
   return rkmessage;
 }
 
+//get the available partitions for a given topic
+void kafka_get_partitions(zval *return_value, char *topic)
+{
+    rd_kafka_topic_t *rkt;
+    rd_kafka_topic_conf_t *conf;
+    int i;//C89 compliant
+    //connect if required
+    if (rk == NULL) {
+        kafka_init();
+    }
+    /* Topic configuration */
+    conf = rd_kafka_topic_conf_new();
+
+    /* Create topic */
+    rkt = rd_kafka_topic_new(rk, topic, conf);
+
+    for (i=0;i < (rkt)->rkt_partition_cnt;++i) {
+        add_next_index_long(return_value, i);
+    }
+}
+
 void kafka_consume(zval* return_value, char* topic, char* offset, int item_count)
 {
 
@@ -221,24 +304,8 @@ void kafka_consume(zval* return_value, char* topic, char* offset, int item_count
 
     rd_kafka_topic_t *rkt;
 
-    char errstr[512];
-    rd_kafka_conf_t *conf;
-
-    /* Kafka configuration */
-    conf = rd_kafka_conf_new();
-
-    /* Create Kafka handle */
-    if (!(rk = rd_kafka_new(RD_KAFKA_CONSUMER, conf, errstr, sizeof(errstr)))) {
-                  openlog("phpkafka", 0, LOG_USER);
-                  syslog(LOG_INFO, "phpkafka - failed to create new consumer: %s", errstr);
-                  exit(1);
-    }
-
-    /* Add brokers */
-    if (rd_kafka_brokers_add(rk, brokers) == 0) {
-            openlog("phpkafka", 0, LOG_USER);
-            syslog(LOG_INFO, "php kafka - No valid brokers specified");
-            exit(1);
+    if (rk == NULL) {
+        kafka_init();
     }
 
     rd_kafka_topic_conf_t *topic_conf;

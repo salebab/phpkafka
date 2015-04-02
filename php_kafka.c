@@ -33,6 +33,7 @@ static zend_function_entry kafka_functions[] = {
     PHP_ME(Kafka, __destruct, NULL, ZEND_ACC_DTOR | ZEND_ACC_PUBLIC)
     PHP_ME(Kafka, set_partition, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
     PHP_ME(Kafka, setPartition, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(Kafka, getPartitionsForTopic, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(Kafka, disconnect, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(Kafka, isConnected, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(Kafka, produce, NULL, ZEND_ACC_PUBLIC)
@@ -168,6 +169,22 @@ PHP_METHOD(Kafka, setPartition)
 }
 /* }}} end Kafka::setPartition */
 
+/* {{{ proto array Kafka::getPartitionsForTopic( string $topic )
+    Get an array of available partitions for a given topic
+*/
+PHP_METHOD(Kafka, getPartitionsForTopic)
+{
+    char *topic = NULL;
+    int topic_len = 0;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+            &topic, &topic_len) == FAILURE) {
+        return;
+    }
+    array_init(return_value);
+    kafka_get_partitions(return_value, topic);
+}
+/* }}} end Kafka::getPartitionsForTopic */
+
 /* {{{ proto bool Kafka::disconnect( void );
     Disconnects kafka, returns false if disconnect failed
     Warning: producing a new message will reconnect to the initial brokers
@@ -182,7 +199,7 @@ PHP_METHOD(Kafka, disconnect)
 }
 /* }}} end Kafka::disconnect */
 
-/* {{{ proto mixed Kafka::produce( string $topic, string $message);
+/* {{{ proto void Kafka::produce( string $topic, string $message);
     Produce a message, returns int (partition used to produce)
     or false if something went wrong
 */
@@ -194,7 +211,6 @@ PHP_METHOD(Kafka, produce)
     char *msg;
     int topic_len;
     int msg_len;
-    int prod_val;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
             &topic, &topic_len,
@@ -202,11 +218,7 @@ PHP_METHOD(Kafka, produce)
         return;
     }
 
-    prod_val = kafka_produce(topic, msg, msg_len);
-    if (prod_val == -1) {
-        RETURN_FALSE;
-    }
-    RETURN_LONG(prod_val);
+    kafka_produce(topic, msg, msg_len);
 }
 /* }}} end Kafka::produce */
 
