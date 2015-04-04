@@ -2,7 +2,7 @@ phpkafka
 ========
 
 
-**Important Note: The library is not supported by the author anymore. However, there are forks, especially [this one](https://github.com/EVODelavega/phpkafka) which is still in the active development. **
+###Important Note: The library is not supported by the author anymore. However, there are forks, especially [this one](https://github.com/EVODelavega/phpkafka) which is still in the active development.
 
 PHP extension for **Apache Kafka 0.8**. It's built on top of kafka C driver ([librdkafka](https://github.com/edenhill/librdkafka/)).
 It makes persistent connection to kafka broker with non-blocking calls, so it should be very fast.
