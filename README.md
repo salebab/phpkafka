@@ -31,5 +31,8 @@ Examples:
 // Produce a message
 $kafka = new Kafka("localhost:9092");
 $kafka->produce("topic_name", "message content");
+$partition = 1;//specify the partition somehow
+//the partition needs to be set, or the consume method will cause a fatal error (C code: exit(1);)
+$kafka->set_partition($partition);
 $kafka->consume("topic_name", 1172556);
 ```

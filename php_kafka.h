@@ -18,7 +18,8 @@
 
 #define PHP_KAFKA_VERSION "0.1.0-dev"
 #define PHP_KAFKA_EXTNAME "kafka"
-
+#define PHP_KAFKA_OFFSET_BEGIN "beginning"
+#define PHP_KAFKA_OFFSET_END "end"
 extern zend_module_entry kafka_module_entry;
 
 PHP_MSHUTDOWN_FUNCTION(kafka);
@@ -32,7 +33,12 @@ PHP_RSHUTDOWN_FUNCTION(kafka);
 
 /* Kafka class */
 static PHP_METHOD(Kafka, __construct);
+static PHP_METHOD(Kafka, __destruct);
 static PHP_METHOD(Kafka, set_partition);
+static PHP_METHOD(Kafka, setPartition);
+static PHP_METHOD(Kafka, getPartitionsForTopic);
+static PHP_METHOD(Kafka, isConnected);
+static PHP_METHOD(Kafka, disconnect);
 static PHP_METHOD(Kafka, produce);
 static PHP_METHOD(Kafka, consume);
 PHPAPI void kafka_connect(char *brokers);
